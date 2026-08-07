@@ -1,0 +1,16 @@
+{
+  "name": "realtime-chat-app",
+  "version": "1.0.0",
+  "description": "تطبيق محادثة فورية متجاوب يدعم المراسلة النصية والمكالمات الصوتية والمرئية",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "author": "Haytham Zeidan",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  }
+}
