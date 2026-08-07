@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق دردشة متجاوب - صوت، فيديو، نص</title>
+    <!-- ربط ملف الـ Manifest لتفعيل PWA -->
+    <link rel="manifest" href="manifest.json">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        /* إعدادات الهيكل الأساسية لمنع القص نهائياً */
+        html, body { 
+            height: 100%; 
+            margin: 0;
+            padding: 0;
+            overflow: hidden; 
+        }
+        body { 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        /* إجبار الحاويات المرنة على احترام المساحة */
+        #landing-area, #chat-area {
+            min-height: 0; 
+        }
+
+        .video-box { height: 180px; }
+        @media (min-width: 768px) {
+            .video-box { height: 280px; }
+        }
+        
+        /* تنسيقات الإيموجي */
+        .emoji-item {
+            cursor: pointer;
+            font-size: 1.3rem;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .emoji-item:hover { transform: scale(1.2); }
+    </style>
+</head>
+<body class="bg-light">
+
+<!-- الشريط العلوي الثابت (تم استبدال الأزرار العائمة بهذا الشريط) -->
+<div class="w-100 bg-white border-bottom d-flex justify-content-between align-items-center py-2 px-3 shadow-sm" style="flex-shrink: 0; z-index: 10;">
+    <div class="fw-bold text-secondary small">
+        <i class="bi bi-chat-square-dots"></i> تطبيق المحادثة
+    </div>
+    <div class="d-flex gap-2">
+        <button id="installBtn" class="btn btn-sm btn-success shadow-sm d-none">
+            <i class="bi bi-download"></i> تثبيت
+        </button>
+        <button id="shareBtn" class="btn btn-sm btn-primary shadow-sm d-none" onclick="shareApp()">
+            <i class="bi bi-share"></i> مشاركة
+        </button>
+    </div>
+</div>
+
+<!-- شاشة تسجيل الدخول المتجاوبة -->
+<div id="landing-area" class="container flex-grow-1 d-flex flex-column justify-content-center align-items-center px-3" style="overflow-y: auto;">
+    <div class="card shadow-sm p-4 w-100 my-3" style="max-width: 420px;">
+        <div class="text-center mb-4">
+            <i class="bi bi-chat-heart-fill text-primary display-4"></i>
+            <h3 class="mt-2">منصة المحادثة الفورية</h3>
+            <p class="text-muted small">تواصل نصياً وصوتياً ومرئياً بكل سهولة</p>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">الاسم الشخصي</label>
+            <input type="text" id="username" class="form-control" placeholder="أدخل اسمك هنا...">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">كود الغرفة (اختياري عند الإنشاء)</label>
+            <input type="text" id="roomIdInput" class="form-control" placeholder="أدخل كود الغرفة للانضمام...">
+        </div>
+        <div class="d-grid gap-2">
+            <button class="btn btn-primary" onclick="createRoom()"><i class="bi bi-plus-circle"></i> إنشاء غرفة جديدة</button>
+            <button class="btn btn-success" onclick="joinRoom()"><i class="bi bi-box-arrow-in-right"></i> انضمام لغرفة</button>
+        </div>
+    </div>
+</div>
+
+<!-- شاشة المحادثة المتجاوبة -->
+<div id="chat-area" class="container-fluid flex-grow-1 d-none flex-column p-0 bg-white" style="overflow: hidden;">
+    <!-- شريط علوي خاص بالغرفة -->
+    <nav class="navbar navbar-dark bg-dark px-3 py-2 shadow-sm flex-shrink-0">
+        <div class="d-flex align-items-center justify-content-between w-100">
+            <span class="navbar-brand mb-0 h6 text-truncate">
+                <i class="bi bi-hash"></i> الغرفة: <code id="displayRoomId" class="text-warning"></code>
+            </span>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-light" onclick="copyCode()"><i class="bi bi-clipboard"></i> نسخ الكود</button>
+                <button class="btn btn-sm btn-danger" onclick="leaveRoom()"><i class="bi bi-box-arrow-right"></i> خروج</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- حاوية الفيديو المتجاوبة -->
+    <div id="video-container" class="row g-2 bg-black p-2 d-none align-items-center justify-content-center m-0 flex-shrink-0">
+        <div class="col-12 col-md-6 position-relative video-box p-1">
+            <video id="remoteVideo" autoplay playsinline class="w-100 h-100 object-fit-cover rounded bg-dark border border-secondary"></video>
+            <span class="position-absolute bottom-0 start-0 m-3 badge bg-danger">الطرف الآخر</span>
+        </div>
+        <div class="col-12 col-md-6 position-relative video-box p-1">
+            <video id="localVideo" autoplay playsinline muted class="w-100 h-100 object-fit-cover rounded bg-dark border border-secondary"></video>
+            <span class="position-absolute bottom-0 start-0 m-3 badge bg-secondary">أنت</span>
+        </div>
+    </div>
+
+    <!-- سجل الرسائل -->
+    <div class="flex-grow-1 p-3 overflow-auto bg-light" id="chat-messages">
+        <div class="text-muted text-center my-3 small">تم الانضمام للغرفة بنجاح. ابدأ المراسلة أو الاتصال الآن!</div>
+    </div>
+
+    <!-- أزرار التحكم وحقل الإدخال -->
+    <div class="p-3 border-top bg-white shadow-sm flex-shrink-0">
+        <div class="input-group mb-2 position-relative">
+            <!-- صندوق الإيموجي -->
+            <div id="emoji-picker" class="d-none bg-white border rounded p-2 position-absolute shadow" style="bottom: 110%; right: 0; z-index: 1000; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; width: 220px;"></div>
+            
+            <button class="btn btn-outline-secondary" id="emojiToggle" type="button">😀</button>
+            <input type="text" id="messageInput" class="form-control" placeholder="اكتب رسالتك هنا..." onkeypress="handleKeyPress(event)">
+            <button class="btn btn-primary" id="sendBtn" onclick="sendMessage()"><i class="bi bi-send-fill"></i> إرسال</button>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-success btn-sm flex-fill" id="startAudioCall" onclick="startCall(false)"><i class="bi bi-telephone-fill"></i> مكالمة صوتية</button>
+            <button class="btn btn-danger btn-sm flex-fill" id="startVideoCall" onclick="startCall(true)"><i class="bi bi-camera-video-fill"></i> مكالمة فيديو</button>
+            <button class="btn btn-outline-danger btn-sm flex-fill d-none" id="endCall" onclick="endCall()"><i class="bi bi-telephone-x-fill"></i> إنهاء المكالمة</button>
+        </div>
+    </div>
+</div>
+
+<!-- تذييل حقوق الملكية -->
+<div class="w-100 bg-light border-top text-center py-2" style="flex-shrink: 0; font-size: 0.85rem; z-index: 10;">
+    <span class="text-muted">تصميم وتطوير: </span>
+    <a href="https://github.com/wazefapress" class="text-decoration-none fw-bold text-primary">هيثم زيدان</a> | 
+    <a href="https://github.com/wazefapress/Real-Time-Chat-Video-Call-App" target="_blank" class="text-decoration-none text-dark fw-bold ms-1">
+        <i class="bi bi-github"></i> GitHub
+    </a>
+</div>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
