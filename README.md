@@ -41,5 +41,5 @@
 ### 2. تثبيت المشروع
 قم باستنساخ المستودع (Clone) إلى جهازك:
 ```bash
-git clone [https://github.com/HaythamZeidan/your-repo-name.git](https://github.com/HaythamZeidan/your-repo-name.git)
+git clone [[.](https://github.com/wazefapress/Real-Time-Chat-Video-Call-Ayo.git)]([git](https://github.com/wazefapress/Real-Time-Chat-Video-Call-App.git))
 cd your-repo-name
