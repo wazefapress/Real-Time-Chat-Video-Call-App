@@ -4,7 +4,14 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+
+// إضافة إعدادات CORS لتجنب حظر الاتصال بين الواجهة والسيرفر
+const io = new Server(server, {
+    cors: {
+        origin: "*", // يسمح بالاتصال من أي رابط
+        methods: ["GET", "POST"]
+    }
+});
 
 app.use(express.static(__dirname));
 
@@ -15,7 +22,9 @@ io.on('connection', (socket) => {
     });
 
     socket.on('chat_message', (data) => {
-        io.to(data.roomId).emit('chat_message', { name: data.name, text: data.text });
+        // تم التعديل هنا: استخدام socket.to بدلاً من io.to
+        // لإرسال الرسالة إلى الطرف الآخر في الغرفة فقط (باستثناء المرسل)
+        socket.to(data.roomId).emit('chat_message', { name: data.name, text: data.text });
     });
 
     // إشارات WebRTC للاتصال المرئي والصوتي
