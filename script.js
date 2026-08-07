@@ -52,12 +52,27 @@ function leaveRoom() {
 }
 
 // المراسلة النصية
+// المراسلة النصية
 function sendMessage() {
     const text = document.getElementById('messageInput').value.trim();
     if (text) {
+        // 1. إرسال الرسالة إلى السيرفر
         socket.emit('chat_message', { roomId: currentRoom, name: myName, text });
+        
+        // 2. عرض الرسالة فوراً في شاشة المرسل (أنت)
+        const chatMessages = document.getElementById('chat-messages');
+        const div = document.createElement('div');
+        // استخدام لون مميز لرسائل المرسل
+        div.className = 'mb-2 p-2 rounded bg-primary text-white border shadow-sm text-end';
+        div.innerHTML = `<strong>أنت:</strong> ${text}`;
+        chatMessages.appendChild(div);
+        
+        // التمرير التلقائي لأسفل لرؤية الرسالة الجديدة
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // 3. تفريغ صندوق الإدخال وإخفاء الإيموجي
         document.getElementById('messageInput').value = '';
-        document.getElementById('emoji-picker').classList.add('d-none'); // إخفاء الإيموجي بعد الإرسال
+        document.getElementById('emoji-picker').classList.add('d-none');
     }
 }
 
