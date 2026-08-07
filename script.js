@@ -2,8 +2,10 @@
 // 1. إعدادات السيرفر (Render) والاتصال
 // ==========================================
 const SERVER_URL = "https://real-time-chat-video-call-app.onrender.com"; 
-let socket;
+//let socket;
 //const socket = io();
+// تهيئة الاتصال مباشرة باستخدام الرابط
+const socket = io(SERVER_URL);
 let currentRoom = "";
 let myName = "";
 let localStream;
@@ -176,34 +178,37 @@ function endCall() {
    إضافات التحديث الجديد: الإيموجي والمشاركة والتثبيت
    ========================================= */
 
-// 1. نظام الـ Emojis (إضافة 10 إيموجيز)
+/* =========================================
+   إضافات التحديث الجديد (نسخة آمنة)
+   ========================================= */
+
+// 1. نظام الـ Emojis
 const emojisList = ['😀', '😂', '😍', '🙏', '👍', '🔥', '🎉', '💡', '💻', '🚀'];
 const emojiPicker = document.getElementById('emoji-picker');
 const messageInput = document.getElementById('messageInput');
 const emojiToggle = document.getElementById('emojiToggle');
 
-// توليد الإيموجيز
-emojisList.forEach(emoji => {
-    const span = document.createElement('span');
-    span.textContent = emoji;
-    span.className = 'emoji-item';
-    span.onclick = () => {
-        messageInput.value += emoji;
-        messageInput.focus();
+if (emojiPicker && messageInput && emojiToggle) {
+    emojisList.forEach(emoji => {
+        const span = document.createElement('span');
+        span.textContent = emoji;
+        span.className = 'emoji-item';
+        span.onclick = () => {
+            messageInput.value += emoji;
+            messageInput.focus();
+        };
+        emojiPicker.appendChild(span);
+    });
+
+    emojiToggle.onclick = () => {
+        emojiPicker.classList.toggle('d-none');
     };
-    emojiPicker.appendChild(span);
-});
+}
 
-// إظهار/إخفاء صندوق الإيموجيز
-emojiToggle.onclick = () => {
-    emojiPicker.classList.toggle('d-none');
-};
-
-// 2. ميزة مشاركة التطبيق (Web Share API)
+// 2. ميزة مشاركة التطبيق
 const shareBtn = document.getElementById('shareBtn');
-
-if (navigator.share) {
-    shareBtn.classList.remove('d-none'); // إظهار الزر إذا كانت الميزة مدعومة
+if (shareBtn && navigator.share) {
+    shareBtn.classList.remove('d-none');
 }
 
 async function shareApp() {
@@ -214,38 +219,35 @@ async function shareApp() {
             url: window.location.href
         });
     } catch (error) {
-        console.log('تم إلغاء المشاركة أو حدث خطأ:', error);
+        console.log('تم إلغاء المشاركة:', error);
     }
 }
 
-// 3. ميزة تثبيت التطبيق (PWA Install)
+// 3. ميزة تثبيت التطبيق
 let deferredPrompt;
 const installBtn = document.getElementById('installBtn');
 
-// اعتراض حدث طلب التثبيت
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    installBtn.classList.remove('d-none'); // إظهار الزر
+    if (installBtn) installBtn.classList.remove('d-none');
 });
 
-installBtn.onclick = async () => {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-            console.log('تم تثبيت التطبيق بنجاح');
+if (installBtn) {
+    installBtn.onclick = async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+            installBtn.classList.add('d-none');
         }
-        deferredPrompt = null;
-        installBtn.classList.add('d-none');
-    }
-};
+    };
+}
 
-// تسجيل Service Worker ليعمل التطبيق كـ PWA
+// تسجيل Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
-            .then(() => console.log('Service Worker Registered'))
             .catch(err => console.error('Service Worker Failed', err));
     });
 }
