@@ -21,9 +21,9 @@ io.on('connection', (socket) => {
         socket.to(data.roomId).emit('user_joined', { name: data.name, id: socket.id });
     });
 
+    // استلام وإرسال الرسائل النصية
     socket.on('chat_message', (data) => {
-        // تم التعديل هنا: استخدام socket.to بدلاً من io.to
-        // لإرسال الرسالة إلى الطرف الآخر في الغرفة فقط (باستثناء المرسل)
+        // استخدام socket.to لإرسال الرسالة إلى الطرف الآخر في الغرفة فقط (باستثناء المرسل)
         socket.to(data.roomId).emit('chat_message', { name: data.name, text: data.text });
     });
 
