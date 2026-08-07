@@ -1,7 +1,7 @@
 {
   "name": "تطبيق المحادثة الفورية",
   "short_name": "محادثة",
-  "start_url": "./",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f8f9fa",
   "theme_color": "#343a40",
