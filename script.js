@@ -137,6 +137,10 @@ socket.on('user_joined', async (data) => {
     chatMessages.appendChild(div);
 });
 
+// 1. إضافة مصفوفة لتخزين مرشحي ICE مؤقتاً
+let iceCandidatesQueue = [];
+
+// 2. تعديل حدث استقبال العرض (offer)
 socket.on('offer', async (data) => {
     document.getElementById('video-container').classList.remove('d-none');
     document.getElementById('endCall').classList.remove('d-none');
@@ -144,18 +148,34 @@ socket.on('offer', async (data) => {
     document.getElementById('startVideoCall').classList.add('d-none');
 
     try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        // تحديد ما إذا كان العرض يحتوي على فيديو لتجنب طلب كاميرا في مكالمة صوتية
+        const hasVideo = data.offer.sdp.includes('m=video');
+        
+        localStream = await navigator.mediaDevices.getUserMedia({ 
+            video: hasVideo, 
+            audio: true 
+        });
         document.getElementById('localVideo').srcObject = localStream;
 
         setupPeerConnection();
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+        
+        // تفريغ طابور مرشحات ICE التي وصلت أثناء طلب صلاحيات الكاميرا
+        while (iceCandidatesQueue.length > 0) {
+            const candidate = iceCandidatesQueue.shift();
+            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
         socket.emit('answer', { roomId: currentRoom, answer });
     } catch (error) {
         console.error('خطأ عند استقبال العرض:', error);
+        alert('حدث خطأ في الوصول إلى الوسائط. تأكد من توفر الصلاحيات.');
     }
 });
+
+
 
 socket.on('answer', async (data) => {
     if (peerConnection) {
@@ -164,12 +184,16 @@ socket.on('answer', async (data) => {
 });
 
 socket.on('ice_candidate', async (data) => {
-    if (peerConnection) {
+    // التحقق من أن الاتصال والوصف البعيد جاهزان قبل إضافة المرشح
+    if (peerConnection && peerConnection.remoteDescription) {
         try {
             await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
         } catch (e) {
-            console.error('خطأ في إضافة ICE Candidate', e);
+            console.error('خطأ في إضافة ICE Candidate:', e);
         }
+    } else {
+        // حفظ المرشح في الطابور إذا لم يكن الكود جاهزاً لمعالجته بعد
+        iceCandidatesQueue.push(data.candidate);
     }
 });
 
