@@ -58,3 +58,7 @@ cd your-repo-name
 رابط التطبيق 
 
 https://wazefapress.github.io/Real-Time-Chat-Video-Call-App/
+
+
+المزيد من التطبيقات 
+https://games.haythamzeidan.workers.dev/
